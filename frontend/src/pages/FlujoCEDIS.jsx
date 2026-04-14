@@ -151,7 +151,7 @@ function BarraOC({ oc, columnWidths, onClickSegmento, onClickNombre }) {
   return (
     <div style={{ display:'grid', gridTemplateColumns:columnWidths, width:'100%', minHeight:44, alignItems:'center', borderBottom:'1px solid var(--ds-border-light)' }}>
       <div onClick={e=>{e.stopPropagation();if(onClickNombre)onClickNombre(oc);}} style={{ paddingLeft:12, paddingRight:8, display:'flex', flexDirection:'column', gap:1, position:'sticky', left:0, background:'var(--ds-bg-surface)', zIndex:2, borderRight:'1px solid var(--ds-border-light)', minHeight:44, justifyContent:'center', cursor:'pointer', transition:'background .15s' }} onMouseEnter={e=>e.currentTarget.style.background='var(--ds-primary-light)'} onMouseLeave={e=>e.currentTarget.style.background='var(--ds-bg-surface)'}>
-        <div style={{ fontSize:12, fontWeight:600, color:'var(--ds-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:160, textDecoration:'underline dotted' }}>{oc.nombre}</div>
+        <div style={{ fontSize:12, fontWeight:600, color:'var(--ds-text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:160 }}>{oc.nombre}</div>
         <div style={{ fontSize:9, color:'var(--ds-text-disabled)', fontFamily:'monospace' }}>{oc.totalPrepacks} prep. · {oc.proveedor}</div>
       </div>
       {ETAPAS_FLUJO.map((etapa, idx) => {

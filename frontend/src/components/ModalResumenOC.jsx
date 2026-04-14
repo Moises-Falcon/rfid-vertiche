@@ -21,10 +21,13 @@ export default function ModalResumenOC({ oc, onClose }) {
 
   function getM(eId) {
     const te=tags.filter(t=>t.etapa_actual===eId),n=te.length,err=te.filter(t=>t.qa_fallido).length,ok=n-err;
-    const pct=total>0?Math.round((n/total)*100):0, pctOk=n>0?Math.round((ok/n)*100):100;
     const log=etapaLogs.find(l=>l.etapa===eId), enCurso=log&&!log.timestamp_salida;
     const dur=log?.timestamp_salida?Math.round((new Date(log.timestamp_salida)-new Date(log.timestamp_entrada))/60000):null;
-    return {n,err,ok,pct,pctOk,log,enCurso,dur};
+    // Usar prepacks_entrada del log si no hay tags activos en esta etapa (ya pasaron)
+    const nEfectivo = n > 0 ? n : (log?.prepacks_entrada || 0);
+    const pct=total>0?Math.round((nEfectivo/total)*100):0;
+    const pctOk=nEfectivo>0?Math.round((ok>0?ok:nEfectivo-err)/nEfectivo*100):100;
+    return {n:nEfectivo,err,ok:nEfectivo-err,pct,pctOk,log,enCurso,dur};
   }
 
   useEffect(()=>{const h=e=>{if(e.key==='Escape')onClose();};document.addEventListener('keydown',h);document.body.style.overflow='hidden';return()=>{document.removeEventListener('keydown',h);document.body.style.overflow='';};}, [onClose]);
@@ -59,7 +62,7 @@ export default function ModalResumenOC({ oc, onClose }) {
           <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:4}}>
             {ETAPAS_ORDEN.map(eId=>{
               const {n,err,ok,pct,pctOk,log,enCurso,dur}=getM(eId);
-              if(n===0&&!log) return null;
+              if(n===0&&!log&&!oc.etapasActivas?.includes(eId)) return null;
               const color=ETAPA_COLORS[eId];
               return(
                 <div key={eId} style={{minWidth:120,flexShrink:0,border:`1.5px solid ${enCurso?color:`${color}44`}`,borderTop:`4px solid ${color}`,borderRadius:10,padding:'10px 12px',background:enCurso?`${color}08`:'#fff'}}>

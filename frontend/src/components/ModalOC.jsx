@@ -242,9 +242,9 @@ export default function ModalOC({ ordenId, demoData = null, etapaOrigen = null, 
                                 {log.tiene_anomalia?'⚠':enCurso?'●':'✓'}
                               </div>
                               <div style={{fontSize:9,fontWeight:700,color:'#334155',textTransform:'uppercase',letterSpacing:'.3px',marginBottom:4}}>{ETAPA_LABELS[log.etapa]}</div>
-                              <div style={{fontSize:10,color:'#64748B',fontWeight:600}}>{formatHora(log.timestamp_entrada)}</div>
-                              <div style={{fontSize:10,color:enCurso?'var(--ds-verde)':'#94A3B8',fontWeight:enCurso?700:400}}>{enCurso?'en curso':`→ ${formatHora(log.timestamp_salida)}`}</div>
-                              {dur!==null&&dur>0&&<div style={{fontSize:9,color:'#94A3B8',marginTop:2}}>{formatDur(dur)}</div>}
+                              <div style={{fontSize:9,color:'#64748B',marginTop:2,lineHeight:1.4}}><span style={{fontWeight:600}}>Entró:</span> {formatHora(log.timestamp_entrada)}</div>
+                              {enCurso?<div style={{fontSize:9,color:'var(--ds-verde)',fontWeight:700,marginTop:1}}>En curso</div>:<div style={{fontSize:9,color:'#64748B',lineHeight:1.4}}><span style={{fontWeight:600}}>Salió:</span> {formatHora(log.timestamp_salida)}</div>}
+                              {dur!==null&&dur>0&&<div style={{fontSize:9,color:'#94A3B8',marginTop:1}}>Duración: {formatDur(dur)}</div>}
                               {bajoPrepacks&&<div style={{fontSize:8,fontWeight:700,color:'var(--ds-rojo-text)',background:'var(--ds-rojo-bg)',borderRadius:4,padding:'1px 6px',marginTop:3,display:'inline-block'}}>{log.prepacks_entrada}→{log.prepacks_salida} prep.</div>}
                             </div>
                           </div>
