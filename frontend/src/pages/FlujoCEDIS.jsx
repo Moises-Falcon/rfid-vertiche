@@ -68,8 +68,9 @@ function buildOC(palet) {
 
 // ─── Datos estáticos de demo ────────────────────────────────────────────────
 
-const _t = (n,c,s,b,ci,e) => ({epc:`DEMO-${Math.random().toString(36).slice(2,8)}`,color:n,talla:c,qa_fallido:false,etapa_actual:s,tienda:{nombre:`Vértice ${b}`,ciudad:ci,estado:e,bahia_asignada:`BAHIA-${Math.ceil(Math.random()*10)}`}});
-const _te = (n,c,s,b,ci,e) => ({..._t(n,c,s,b,ci,e),qa_fallido:true});
+let _bahiaCounter = 0;
+const _t = (n,c,s,b,ci,e) => {_bahiaCounter=(_bahiaCounter%10)+1; return {epc:`DEMO-${Math.random().toString(36).slice(2,8)}`,color:n,talla:c,qa_fallido:false,etapa_actual:s,cantidad_piezas:12,tipo_flujo:'CROSS_DOCK',sku:`${n.substring(0,3).toUpperCase()}-${c}`,tienda:{nombre:`Vértice ${b}`,ciudad:ci,estado:e,bahia_asignada:`BAHIA-${_bahiaCounter}`},anomalias:[]};};
+const _te = (n,c,s,b,ci,e) => ({..._t(n,c,s,b,ci,e),qa_fallido:true,qa_motivo_fallo:'Prenda defectuosa'});
 
 function ts(horaBase, minutosOffset=0) {
   const d=new Date(); d.setHours(Math.floor(horaBase),(horaBase%1)*60+minutosOffset,0,0); return d.toISOString();
@@ -85,8 +86,9 @@ const _oc = (id,nom,prov,etapas,extra={}) => {
   const idxMin = etapasActivas.length>0?Math.min(...etapasActivas.map(e=>ETAPA_IDX[e]??99)):0;
   const idxMax = etapasActivas.length>0?Math.max(...etapasActivas.map(e=>ETAPA_IDX[e]??0)):0;
   const comp = allTags.filter(t=>['ENVIO','COMPLETADO'].includes(t.etapa_actual)).length;
-  return {ordenId:id,nombre:nom,proveedor:prov,totalPrepacks:allTags.length,pct:allTags.length>0?(comp/allTags.length)*100:0,hasErr:allTags.some(t=>t.qa_fallido),tags:allTags,tagsPorEtapa,etapasActivas,idxMin,idxMax,
-    etapa_logs:extra.etapa_logs||[],total_esperados:extra.total_esperados||allTags.length,total_recibidos:extra.total_recibidos||allTags.length,faltantes:extra.faltantes||0};
+  return {ordenId:id,nombre:nom,nombre_producto:nom,proveedor:prov,totalPrepacks:allTags.length,pct:allTags.length>0?(comp/allTags.length)*100:0,hasErr:allTags.some(t=>t.qa_fallido),tags:allTags,tagsPorEtapa,etapasActivas,idxMin,idxMax,
+    etapa_logs:extra.etapa_logs||[],total_esperados:extra.total_esperados||allTags.length,total_recibidos:extra.total_recibidos||allTags.length,faltantes:extra.faltantes||0,
+    orden:{orden_id:id,nombre_producto:nom,foto_url:null},pedido:{pedido_id:'PED-DEMO',proveedor:{nombre:prov}},pedido_id:'PED-DEMO',palet_id:id,estado:comp===allTags.length&&allTags.length>0?'DESPACHADO':'ACTIVO'};
 };
 
 const DEMO_KPI = {

@@ -72,19 +72,22 @@ rfid-vertiche/
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx                Navegacion por 5 tabs + navegacion Mapa->Palet
+│   │   ├── App.jsx                5 tabs + modales flotantes (ModalOC, ModalPalet, ModalResumenOC)
 │   │   ├── main.jsx               Entry point
-│   │   ├── index.css              Variables CSS del sistema de diseno
+│   │   ├── index.css              Variables CSS + Design System V8 (semaforos, sombras, hover)
 │   │   ├── pages/
-│   │   │   ├── FlujoCEDIS.jsx     Vista principal: Modo Linea + Modo Mapa (zonas) + KPI bar
-│   │   │   ├── Pedidos.jsx        Lista de pedidos con drill-down
-│   │   │   ├── DetallePedido.jsx  Detalle de un pedido: stats, flujos, palets
-│   │   │   ├── DetallePalet.jsx   Detalle completo: header, timeline, tabla color×talla, prepacks expandibles, QA fallo
+│   │   │   ├── FlujoCEDIS.jsx     Dashboard Gantt + KPI 32% + 25 OCs demo + bahias/auditoria/envio
+│   │   │   ├── Pedidos.jsx        Lista de pedidos — clic abre ModalOC
+│   │   │   ├── DetallePedido.jsx  Detalle de un pedido (legacy)
+│   │   │   ├── DetallePalet.jsx   Detalle de palet con QA fallo y validacion
 │   │   │   ├── LecturasLive.jsx   Feed en tiempo real + contadores + anomalias
 │   │   │   ├── Trazabilidad.jsx   Buscar historial por EPC o SKU (7 etapas)
 │   │   │   ├── Vinculacion.jsx    Registrar tags + tabla de ultimos registros
-│   │   │   └── EstadoCajas.jsx    (no importada en App.jsx — codigo disponible)
+│   │   │   └── EstadoCajas.jsx    (no importada — codigo disponible)
 │   │   ├── components/
+│   │   │   ├── ModalOC.jsx        Modal detalle de OC: metricas por etapa, tabla color×talla, historial, prepacks
+│   │   │   ├── ModalResumenOC.jsx Modal resumen de OC: metricas por etapa con horas, SVG color prenda
+│   │   │   ├── ModalPalet.jsx     Modal wrapper de DetallePalet
 │   │   │   ├── TagBadge.jsx       Badge reutilizable para tags
 │   │   │   ├── AnomaliaAlert.jsx  Alerta visual de anomalias
 │   │   │   ├── CajaCard.jsx       Card de estado de caja
@@ -424,53 +427,88 @@ Anomalias: ~0.2% por tipo (demo limpia).
 
 ---
 
-## Frontend — 5 Tabs (V5)
+## Frontend — Dashboard Gantt (V9)
 
-### Flujo CEDIS (tab principal)
-Vista operativa del CEDIS con dos modos:
-- **Barra KPI:** Siempre visible arriba — Ciclo promedio hoy, % mejora vs proceso manual (meta 32%), palets completados, palets activos.
-- **Modo Linea:** Grid de 8 columnas (7 etapas + Completado). Tarjetas de palet muestran nombre_producto (GRANDE) y palet_id (pequeño). Barra de resumen con conteo por etapa.
-- **Modo Mapa:** Zonas horizontales con semaforo por zona. Cada zona muestra conteo, iconos de palets, y flashea con WebSocket. Zona Bahias con grid de 6 bahias individuales. Click en zona abre panel con lista de palets.
-Panel superior: Ordenes de Compra con nombre_producto, barra de progreso y faltantes.
-Modo se persiste en localStorage.
+### Flujo CEDIS (tab principal) — Vista Gantt
 
-**Regla de nomenclatura:** En TODAS las pantallas, el nombre del producto va PRIMERO y grande, el ID tecnico va SEGUNDO y pequeño.
+La pantalla principal muestra un diagrama de Gantt donde cada fila es una Orden de Compra
+y las columnas son las 7 etapas del flujo RFID.
 
-### Pedidos
-Vista jerarquica: Pedidos -> DetallePedido -> DetallePalet -> Trazabilidad.
-- Lista de pedidos con progreso, proveedor, palets, anomalias
-- DetallePedido: stats, distribucion por flujo, mapa de 7 etapas, cards de palets
-- DetallePalet: 4 secciones (ver abajo)
-- "Ver historial" navega al tab Trazabilidad con el EPC preseleccionado
+**Barra KPI** (siempre visible arriba):
+- % de mejora vs proceso manual con semaforo (verde >= 32%, amarillo 20-32%, rojo < 20%)
+- Ciclo promedio hoy
+- OCs activas
+- Completadas hoy
+- Botones: Pausar (congela datos para presentaciones) + Demo (25 OCs estaticas)
 
-### DetallePalet (V5 — rediseño completo)
-1. **Header del cargamento:** Foto/placeholder, nombre_producto (GRANDE), palet_id + orden_id (pequeño), proveedor, badge de estado (Todo OK / Con observaciones / Requiere atencion), total prepacks, tiempo de ciclo, conteo de rechazados en QA.
-2. **Historial del cargamento:** Timeline horizontal de 7 nodos. Cada nodo muestra hora entrada/salida, prepacks entrada/salida (en rojo si difieren), icono de estado, notas de anomalia. Nota visual en SORTER: "Palet se divide en prepacks".
-3. **Validacion vs Orden de Compra:** Si hay faltantes, muestra comparativo esperados vs recibidos con detalle por color/talla.
-4. **Tabla color × talla:** Matriz dinamica (solo tags no fallidos) con totales. Nota al pie con conteo de rechazados en QA.
-5. **Prepacks del cargamento:** Tabla con EPC, producto legible (color + talla), tienda, bahia, etapa, estado (OK/ERR/QA FALLO). Ordenados: fallidos primero, luego con anomalia, luego ok. Doble clic expande inline con detalle + mini-timeline + boton "Marcar como fallido en QA" con selector de motivo.
+**Gantt de OCs:**
+- Cada fila = 1 OC. Columna izquierda = nombre del producto (negro, clickeable → ModalResumenOC)
+- Cada segmento muestra 3 datos especificos por etapa (ej: recibidos/esperados/% en Pre-registro)
+- Los segmentos son clickeables → abren ModalOC con metricas de esa etapa
+- Una OC puede estar en multiples etapas simultaneamente (sus prepacks se distribuyen)
+- OCs en COMPLETADO no aparecen en el Gantt
+- Colores por etapa: azul (Pre-reg), verde (QA), ambar (Registro), violeta (Sorter), cyan (Bahia), rosa (Auditoria), verde (Envio)
 
-### Lecturas en Vivo
+**Bahias / Auditoria / Envio** (debajo del Gantt):
+- 3 filas de 10 celdas cada una (pills ovalados para bahias, rectangulos para auditoria/envio)
+- Cada celda muestra conteo de OCs con semaforo
+- Click en celda → panel con OCs de esa bahia
+
+**Modo Demo** (25 OCs estaticas):
+- 4 en Pre-registro, 3 en QA, 4 en Registro, 3 en Sorter, 3 en Bahias, 4 en Auditoria, 4 en Envio
+- 5 OCs con faltantes, 4 con errores QA
+- Timestamps realistas de un dia de operacion (04:00 a 10:00)
+- KPI demo: 30.6% mejora, 125min ciclo, 25 activas, 8 completadas
+- No depende del backend — funciona sin servidor
+
+### Modales (se abren como overlay, no navegan)
+
+**ModalOC** (clic en segmento del Gantt):
+- Metricas destacadas de la etapa desde la que se abrio (3 tarjetas grandes)
+- Tabla color × talla con totales horizontales y verticales
+- Validacion de recepcion (si hay faltantes vs OC)
+- Historial consolidado con horas explicitas (Entro/Salio/Duracion)
+- Distribucion en bahias de esta OC
+- Tabla de prepacks filtrados por etapa con estatus (Presente/Entregado/QA) en linea horizontal
+- Boton "Ver detalle" abre mini-modal del prepack
+
+**ModalResumenOC** (clic en nombre de OC en Gantt):
+- Icono SVG con color real de la prenda
+- Tarjetas por cada etapa con actividad: %, conteo, horas explicitas, calidad en QA/Auditoria
+- Validacion de faltantes
+- Tabla compacta de prepacks con circulos de color
+
+**Mini-modal del prepack** (clic en "Ver detalle" dentro de ModalOC):
+- Muestra de color grande de la prenda
+- Info: color, talla, piezas, tipo flujo
+- Tienda destino con ciudad/estado y bahia asignada
+- Estatus: Calidad (OK/Fallo) + Entrega (Entregado/Pendiente) + Etapa actual
+
+### Pedidos (tab)
+Lista de pedidos del backend. Click en un pedido → abre ModalOC directamente (sin navegacion interna).
+
+### Lecturas en Vivo (tab)
 Feed WebSocket. Columnas: HORA | ETAPA | SKU + EPC | PEDIDO | TIENDA | OK
 Contadores: Lecturas Preregistro | Lecturas Bahia | Anomalias hoy | Duplicados hoy
-Filtros por las 7 etapas.
 
-### Trazabilidad
+### Trazabilidad (tab)
 Busqueda por EPC o SKU. Timeline horizontal de 7 nodos.
-Botones de acceso rapido: DEMO OK y DEMO ERR (datos fijos de cajon).
-Acepta prop `initialEpc` para navegar directamente desde DetallePalet.
+Botones de acceso rapido: DEMO OK y DEMO ERR.
 
-### Registrar Tag
-Formulario con tienda_id TDA-xxx (FK), palet_id opcional, pedido_id opcional.
+### Registrar Tag (tab)
+Formulario con tienda_id, palet_id opcional, pedido_id opcional.
 
 ---
 
-## Navegacion entre vistas
+## Navegacion
 
-- **FlujoCEDIS (Mapa) -> DetallePalet:** Click en palet del panel lateral navega al tab Pedidos con el palet seleccionado.
-- **DetallePalet -> Trazabilidad:** "Ver historial" en fila de prepack navega al tab Trazabilidad con EPC preseleccionado.
-- **DetallePedido -> DetallePalet:** Click en card de palet.
-- **Pedidos -> DetallePedido:** Click en fila de pedido.
+Todo funciona con modales flotantes. Ningun clic navega a otra pagina.
+- **Gantt segmento** → ModalOC (con metricas de etapa)
+- **Gantt nombre OC** → ModalResumenOC
+- **ModalOC prepack** → Mini-modal del prepack
+- **Pedidos fila** → ModalOC
+- **Bahia celda** → Panel con OCs → clic en OC → ModalOC
+- Escape o clic fuera cierra cualquier modal
 
 ---
 
@@ -520,23 +558,35 @@ Al correr `npx prisma db seed` se crean:
 
 ---
 
-## Sistema de diseno
+## Design System V8
 
-Sin librerias de UI. Solo CSS inline y variables CSS.
+Sin librerias de UI. CSS inline + variables CSS (Design System V8 — Dashboard Industrial Limpio).
 Fuente: IBM Plex Sans / IBM Plex Mono (Google Fonts).
 
-| Variable             | Uso                            |
-|----------------------|--------------------------------|
-| --flujo-crossdock    | Badge tipo CROSS_DOCK          |
-| --flujo-almacen      | Badge tipo NUEVA_TIENDA        |
-| --flujo-refill       | Badge tipo REFILL              |
-| --etapa-preregistro  | Nodo timeline PREREGISTRO      |
-| --etapa-qa           | Nodo timeline QA               |
-| --etapa-registro     | Nodo timeline REGISTRO         |
-| --etapa-sorter       | Nodo timeline SORTER           |
-| --etapa-bahia        | Nodo timeline BAHIA            |
-| --etapa-auditoria    | Nodo timeline AUDITORIA        |
-| --etapa-envio        | Nodo timeline ENVIO            |
+### Colores principales
+
+| Variable             | Valor   | Uso                                    |
+|----------------------|---------|----------------------------------------|
+| --ds-verde           | #16A34A | Semaforo OK, flujo normal              |
+| --ds-amarillo        | #D97706 | Atencion requerida, cerca del limite   |
+| --ds-rojo            | #DC2626 | Error real (qa_fallido, anomalia)      |
+| --ds-primary         | #4F46E5 | Indigo — acciones, selecciones activas |
+| --ds-zona-auditoria  | #7C3AED | Violeta — celdas de auditoria          |
+| --ds-zona-envio      | #059669 | Verde — celdas de envio                |
+| --ds-bg-page         | #F5F7FA | Fondo de pagina (gris neutro)          |
+
+### Reglas de color
+- **Rojo** solo para errores reales (qa_fallido, anomalias graves)
+- **Verde** para flujo normal sin problemas
+- **Amarillo** para atencion (bahia llenando, cerca del limite)
+- **Gris** para celdas vacias sin datos
+- Solo el dot rojo pulsa. Verde y amarillo son estaticos.
+
+### Animaciones permitidas
+- `ds-pulso-rojo` — dot rojo que pulsa (unica animacion en loop)
+- `ds-entrada-panel` — fade-in de paneles
+- `ds-entrada-modal` — fade-in de modales
+- Hover en celdas y cards (transicion de borde/fondo)
 
 ---
 
@@ -597,8 +647,9 @@ BACKEND_URL=http://localhost:3000
 | 2      | Simulador secuencial + WebSocket + Frontend (3 tabs)   | Completado |
 | 3      | Pedidos/Palets/Tiendas + 6 etapas + 4 tabs frontend   | Completado |
 | 4      | OrdenCompra + FlujoCEDIS (Linea/Mapa) + 5 tabs V3     | Completado |
-| 5      | 7 etapas oficiales + palet_etapa_log + QA fallo + KPI ciclo + nomenclatura + Mapa zonas | Completado |
+| 5      | 7 etapas oficiales + palet_etapa_log + QA fallo + KPI ciclo                              | Completado |
+| 6      | Dashboard Gantt + modales OC/Resumen/Prepack + Demo 25 OCs + Design System V8            | Completado |
 
 ---
 
-*Equipo RFID — Proyecto Vertiche — ITC Gpo 102 — Abril 2026*
+*Equipo RFID — Proyecto Vertice — ITC Gpo 102 — Abril 2026*
