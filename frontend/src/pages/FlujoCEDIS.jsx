@@ -69,7 +69,7 @@ function buildOC(palet) {
 // ─── Datos estáticos de demo ────────────────────────────────────────────────
 
 let _bahiaCounter = 0;
-const _t = (n,c,s,b,ci,e) => {_bahiaCounter=(_bahiaCounter%10)+1; return {epc:`DEMO-${Math.random().toString(36).slice(2,8)}`,color:n,talla:c,qa_fallido:false,etapa_actual:s,cantidad_piezas:12,tipo_flujo:'CROSS_DOCK',sku:`${n.substring(0,3).toUpperCase()}-${c}`,tienda:{nombre:`Vértice ${b}`,ciudad:ci,estado:e,bahia_asignada:`BAHIA-${_bahiaCounter}`},anomalias:[]};};
+const _t = (n,c,s,b,ci,e) => {_bahiaCounter=(_bahiaCounter%10)+1; return {epc:`DEMO-${Math.random().toString(36).slice(2,8)}`,color:n,talla:c,qa_fallido:false,etapa_actual:s,cantidad_piezas:1,tipo_flujo:'CROSS_DOCK',sku:`${n.substring(0,3).toUpperCase()}-${c}`,tienda:{nombre:`Vértice ${b}`,ciudad:ci,estado:e,bahia_asignada:`BAHIA-${_bahiaCounter}`},anomalias:[]};};
 const _te = (n,c,s,b,ci,e) => ({..._t(n,c,s,b,ci,e),qa_fallido:true,qa_motivo_fallo:'Prenda defectuosa'});
 
 function ts(horaBase, minutosOffset=0) {
@@ -82,6 +82,10 @@ const _oc = (id,nom,prov,etapas,extra={}) => {
   const tagsPorEtapa = {PREREGISTRO:[],QA:[],REGISTRO:[],SORTER:[],BAHIA:[],AUDITORIA:[],ENVIO:[],COMPLETADO:[]};
   const allTags = [];
   Object.entries(etapas).forEach(([e,tags])=>{tagsPorEtapa[e]=tags;allTags.push(...tags);});
+  // Asignar prepack_id en grupos de 4 tags (cada prepack fisico = 4 prendas distintas)
+  const ocNum = id.replace(/[^0-9]/g,'').padStart(3,'0');
+  const letras = 'ABCDEFGHIJ';
+  allTags.forEach((t,i) => { t.prepack_id = `PACK-${ocNum}-${letras[Math.floor(i/4)]}`; });
   const etapasActivas = ETAPAS_FLUJO.map(e=>e.id).filter(e=>tagsPorEtapa[e]?.length>0);
   const idxMin = etapasActivas.length>0?Math.min(...etapasActivas.map(e=>ETAPA_IDX[e]??99)):0;
   const idxMax = etapasActivas.length>0?Math.max(...etapasActivas.map(e=>ETAPA_IDX[e]??0)):0;

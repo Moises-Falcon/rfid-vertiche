@@ -302,37 +302,44 @@ export default function ModalOC({ ordenId, demoData = null, etapaOrigen = null, 
                 {['# Código','Producto','Tienda destino','Bahia','Etapa','Estado',''].map(h=><th key={h} style={{...th,textAlign:'left'}}>{h}</th>)}
               </tr></thead>
               <tbody>
-                {tagsSorted.map(tag=>{
-                  const tieneAnomalia=(tag.anomalias?.length||0)>0;
-                  const isExp=expandido===tag.epc;
+                {(()=>{const grupos={};tagsSorted.forEach(t=>{const pid=t.prepack_id||t.epc;if(!grupos[pid])grupos[pid]=[];grupos[pid].push(t);});return Object.entries(grupos);})().map(([packId,prendas])=>{
+                  const tag=prendas[0];
+                  const tieneErr=prendas.some(t=>t.qa_fallido);
+                  const tieneAnomalia=prendas.some(t=>(t.anomalias?.length||0)>0);
+                  const isExp=expandido===packId;
+                  const presente=true;
+                  const entregado=['ENVIO','COMPLETADO'].includes(tag.etapa_actual);
+                  const calidadOk=!tieneErr;
+                  const colUnicos=[...new Set(prendas.map(p=>p.color))];
+                  const tallUnicas=[...new Set(prendas.map(p=>p.talla))];
                   return[
-                    <tr key={tag.epc} onDoubleClick={()=>setExpandido(isExp?null:tag.epc)} style={{borderBottom:'1px solid var(--ds-border-light)',cursor:'pointer',background:tag.qa_fallido?'#FFF5F5':tieneAnomalia?'#FFFBEB':'transparent'}}>
-                      <td style={{...td,fontFamily:'monospace',fontWeight:700,color:'var(--ds-text-primary)',whiteSpace:'nowrap'}}>{getCodigo(tag)}</td>
+                    <tr key={packId} onDoubleClick={()=>setExpandido(isExp?null:packId)} style={{borderBottom:'1px solid var(--ds-border-light)',cursor:'pointer',background:tieneErr?'#FFF5F5':tieneAnomalia?'#FFFBEB':'transparent'}}>
+                      <td style={{...td,fontFamily:'monospace',fontWeight:700,color:'var(--ds-primary)',whiteSpace:'nowrap'}}>{packId.length>8?`···${packId.slice(-6)}`:packId}</td>
                       <td style={{...td,fontWeight:500}}>
-                        {tag.prendas&&tag.prendas.length>0?(()=>{const cu=[...new Set(tag.prendas.map(p=>p.color))];const tu=[...new Set(tag.prendas.map(p=>p.talla))];return(
-                          <div><div style={{fontWeight:600,fontSize:11,color:'var(--ds-text-primary)'}}>{cu.join(' / ')}</div><div style={{fontSize:9,color:'var(--ds-text-muted)'}}>{tu.join(', ')} · {tag.prendas.length} prendas</div></div>
-                        );})():(
-                          <div><div style={{fontWeight:600,fontSize:11,color:'var(--ds-text-primary)',display:'flex',alignItems:'center',gap:6}}><div style={{width:8,height:8,borderRadius:'50%',background:COLORES_CSS[(tag.color||'').toLowerCase()]||'#94A3B8',border:'1px solid rgba(0,0,0,0.1)',flexShrink:0}}/>{tag.color} {tag.talla}</div><div style={{fontSize:9,color:'var(--ds-text-muted)',marginTop:1}}>× {tag.cantidad_piezas||1} piezas</div></div>
-                        )}
+                        <div style={{fontWeight:600,fontSize:11,color:'var(--ds-text-primary)'}}>{colUnicos.map(c=>{const cCSS=COLORES_CSS[(c||'').toLowerCase()]||'#94A3B8';const eClC=['blanco','white','beige','amarillo'].includes((c||'').toLowerCase());return(
+                          <span key={c} style={{display:'inline-flex',alignItems:'center',gap:3,marginRight:6}}><div style={{width:7,height:7,borderRadius:'50%',background:cCSS,border:eClC?'1px solid #CBD5E1':'none',flexShrink:0}}/>{c}</span>
+                        );})}</div>
+                        <div style={{fontSize:9,color:'var(--ds-text-muted)',marginTop:1}}>{tallUnicas.join(', ')} · {prendas.length} pieza{prendas.length!==1?'s':''}</div>
                       </td>
                       <td style={{...td,fontSize:11}}>{tag.tienda?.nombre||tag.tienda_id||'—'}{tag.tienda?.ciudad&&<div style={{fontSize:10,color:'#64748B',marginTop:1}}>{tag.tienda.ciudad}{tag.tienda.estado_rep?`, ${tag.tienda.estado_rep}`:''}</div>}</td>
                       <td style={{...td,fontSize:11,color:'#94A3B8'}}>{tag.tienda?.bahia_asignada||'—'}</td>
                       <td style={td}><span style={{fontSize:10,fontWeight:600,padding:'2px 7px',borderRadius:4,background:`${ETAPA_COLORS[tag.etapa_actual]||'#94A3B8'}18`,color:ETAPA_COLORS[tag.etapa_actual]||'#94A3B8'}}>{ETAPA_LABELS[tag.etapa_actual]||tag.etapa_actual}</span></td>
-                      <td style={td}>{(()=>{const{presente,entregado,calidadOk}=calcEstatusPrepack(tag);return(
+                      <td style={td}>
                         <div style={{display:'flex',alignItems:'center',gap:4,flexWrap:'nowrap'}}>
                           <span style={{fontSize:9,fontWeight:700,padding:'1px 5px',borderRadius:3,background:presente?'#DCFCE7':'#FEE2E2',color:presente?'#14532D':'#7F1D1D',whiteSpace:'nowrap'}}>{presente?'✓ Pres.':'✗ Aus.'}</span>
                           <span style={{fontSize:9,fontWeight:700,padding:'1px 5px',borderRadius:3,background:entregado?'#DCFCE7':'#F1F5F9',color:entregado?'#14532D':'#64748B',whiteSpace:'nowrap'}}>{entregado?'✓ Entg.':'· Pend.'}</span>
                           <span style={{fontSize:9,fontWeight:700,padding:'1px 5px',borderRadius:3,background:calidadOk?'#DCFCE7':'#FEE2E2',color:calidadOk?'#14532D':'#7F1D1D',whiteSpace:'nowrap'}}>{calidadOk?'✓ QA':'✗ QA'}</span>
-                        </div>);})()}</td>
-                      <td style={td}><button onClick={e=>{e.stopPropagation();setPrepackModal(tag);}} style={{background:'none',border:'1px solid var(--ds-primary-border)',borderRadius:4,padding:'2px 8px',fontSize:9,cursor:'pointer',color:'var(--ds-primary)',fontWeight:600}}>Ver detalle</button></td>
+                        </div>
+                      </td>
+                      <td style={td}><button onClick={e=>{e.stopPropagation();setPrepackModal({...tag,prendas,prepack_id:packId});}} style={{background:'none',border:'1px solid var(--ds-primary-border)',borderRadius:4,padding:'2px 8px',fontSize:9,cursor:'pointer',color:'var(--ds-primary)',fontWeight:600}}>Ver detalle</button></td>
                     </tr>,
-                    isExp&&<tr key={`${tag.epc}-d`}><td colSpan={7} style={{padding:'16px 20px',background:'var(--ds-primary-light)',borderBottom:'1px solid var(--ds-border-light)'}}>
+                    isExp&&<tr key={`${packId}-d`}><td colSpan={7} style={{padding:'16px 20px',background:'var(--ds-primary-light)',borderBottom:'1px solid var(--ds-border-light)'}}>
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px 24px',marginBottom:14,fontSize:12}}>
-                        <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>Producto</span><div style={{fontWeight:600,color:'#0F172A',marginTop:2}}>{tag.color} {tag.talla}</div></div>
+                        <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>Contenido</span><div style={{fontWeight:600,color:'#0F172A',marginTop:2}}>{colUnicos.join(' / ')} · {tallUnicas.join(', ')}</div></div>
                         <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>Tienda destino</span><div style={{fontWeight:600,color:'#0F172A',marginTop:2}}>{tag.tienda?.nombre||'—'}{tag.tienda?.ciudad&&<span style={{fontWeight:400,color:'#64748B'}}> — {tag.tienda.ciudad}{tag.tienda.estado_rep?`, ${tag.tienda.estado_rep}`:''}</span>}</div></div>
                         <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>Tipo de flujo</span><div style={{marginTop:2}}>{tag.tipo_flujo||'—'}</div></div>
-                        <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>Piezas en prepack</span><div style={{fontWeight:700,fontSize:15,color:'#0F172A',marginTop:2}}>{tag.cantidad_piezas||'—'}</div></div>
-                        <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>EPC</span><code style={{fontSize:10,color:'#64748B',marginTop:2,display:'block'}}>{tag.epc}</code></div>
+                        <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>Piezas en prepack</span><div style={{fontWeight:700,fontSize:15,color:'#0F172A',marginTop:2}}>{prendas.length}</div></div>
+                        <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>Código</span><code style={{fontSize:10,color:'#64748B',marginTop:2,display:'block'}}>{packId}</code></div>
                         <div><span style={{fontSize:9,color:'var(--ds-primary-dark)',fontWeight:700,textTransform:'uppercase'}}>Bahía asignada</span><div style={{fontWeight:600,color:'var(--ds-zona-auditoria)',marginTop:2}}>{tag.tienda?.bahia_asignada||'—'}</div></div>
                         {tag.qa_fallido&&<div style={{gridColumn:'1/-1',background:'var(--ds-rojo-bg)',borderRadius:6,padding:'8px 12px',border:'1px solid var(--ds-rojo-border)'}}><strong style={{color:'var(--ds-rojo-text)'}}>Rechazado en QA: </strong><span style={{color:'var(--ds-rojo-text)'}}>{tag.qa_motivo_fallo||'Sin motivo registrado'}</span></div>}
                       </div>
